@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: magnit-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: magnit-app
+  template:
+    metadata:
+      labels:
+        app: magnit-app
+    spec:
+      containers:
+        - name: magnit-app
+          image: REPLACE_WITH_ECR_REPO:latest
+          ports:
+            - containerPort: 8000

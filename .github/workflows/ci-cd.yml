@@ -1,0 +1,60 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+
+      - name: Run tests
+        run: |
+          pytest -q || true
+
+      - name: Static analysis (placeholder)
+        run: echo "Run SAST tools here"
+
+      - name: Dependency scan (placeholder)
+        run: echo "Run SCA tools here (Trivy/Snyk)"
+
+      - name: Login to ECR
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          aws --version
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+
+      - name: Build and push image
+        env:
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        run: |
+          IMAGE_TAG=$(date +%Y%m%d%H%M%S)
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REPOSITORY:$IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Update GitOps repo
+        env:
+          GITOPS_REPO: ${{ secrets.GITOPS_REPO }}
+          GITOPS_REPO_TOKEN: ${{ secrets.GITOPS_REPO_TOKEN }}
+          IMAGE_TAG: ${{ steps.build-and-scan.outputs.IMAGE_TAG }}
+        run: |
+          echo "Updating GitOps repo with image tag $IMAGE_TAG"
+          # Placeholder: call script to update manifests in GitOps repo
+          echo "Use scripts/update-gitops.sh to implement this step"
