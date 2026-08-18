@@ -38,23 +38,26 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws --version
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+          REGISTRY=${{ secrets.ECR_REPOSITORY%/* }}
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY
 
       - name: Build and push image
+        id: build-image
         env:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           IMAGE_TAG=$(date +%Y%m%d%H%M%S)
-          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REPOSITORY:$IMAGE_TAG
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          FULL_IMAGE="$ECR_REPOSITORY:$IMAGE_TAG"
+          docker build -t "$FULL_IMAGE" .
+          docker push "$FULL_IMAGE"
+          echo "image=$FULL_IMAGE" >> $GITHUB_OUTPUT
 
       - name: Update GitOps repo
         env:
           GITOPS_REPO: ${{ secrets.GITOPS_REPO }}
           GITOPS_REPO_TOKEN: ${{ secrets.GITOPS_REPO_TOKEN }}
-          IMAGE_TAG: ${{ steps.build-and-scan.outputs.IMAGE_TAG }}
         run: |
-          echo "Updating GitOps repo with image tag $IMAGE_TAG"
-          # Placeholder: call script to update manifests in GitOps repo
-          echo "Use scripts/update-gitops.sh to implement this step"
+          IMAGE=${{ steps.build-image.outputs.image }}
+          echo "Updating GitOps repo with image $IMAGE"
+          bash scripts/update-gitops.sh "$IMAGE"
