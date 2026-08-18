@@ -1,0 +1,5 @@
+resources:
+  - k8s/deployment.yaml
+images:
+  - name: my-ecr-repo/my-app:1.2.3
+    newName: my-ecr-repo/my-app:1.2.3
