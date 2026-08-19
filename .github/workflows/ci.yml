@@ -42,6 +42,14 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Verify AWS role secret exists
+        run: |
+          if [ -z "${{ secrets.AWS_ROLE_TO_ASSUME }}" ]; then
+            echo "ERROR: Repository secret AWS_ROLE_TO_ASSUME is not set."
+            echo "Set the secret to the role ARN (arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME)"
+            exit 1
+          fi
+
       - name: Configure AWS credentials for Terraform
         uses: aws-actions/configure-aws-credentials@v4
         with:
