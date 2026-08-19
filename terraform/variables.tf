@@ -22,6 +22,12 @@ variable "node_instance_type" {
   default     = "t3.medium"
 }
 
+variable "node_capacity_type" {
+  description = "Capacity type for EKS worker nodes. Use SPOT for non-production cost optimization."
+  type        = string
+  default     = "SPOT"
+}
+
 variable "desired_capacity" {
   description = "Desired number of worker nodes"
   type        = number
@@ -31,11 +37,27 @@ variable "desired_capacity" {
 variable "min_capacity" {
   description = "Minimum number of worker nodes"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "max_capacity" {
   description = "Maximum number of worker nodes"
   type        = number
   default     = 3
+}
+
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "CIDR ranges allowed to reach the public EKS API endpoint."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.cluster_endpoint_public_access_cidrs) > 0 && alltrue([for cidr in var.cluster_endpoint_public_access_cidrs : can(cidrhost(cidr, 0))])
+    error_message = "Provide at least one valid CIDR for EKS API endpoint access."
+  }
+}
+
+variable "ecr_repository_name" {
+  description = "ECR repository name for the Python application image."
+  type        = string
+  default     = "alffino-python-hello"
 }

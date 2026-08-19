@@ -37,3 +37,8 @@ output "aws_account_id" {
   description = "AWS account ID"
   value       = data.aws_caller_identity.current.account_id
 }
+
+output "ecr_repository_url" {
+  description = "ECR repository URL for GitHub Actions ECR_REPOSITORY"
+  value       = aws_ecr_repository.app.repository_url
+}

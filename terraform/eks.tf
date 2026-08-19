@@ -5,7 +5,8 @@ module "eks" {
   name               = var.cluster_name
   kubernetes_version = var.kubernetes_version
 
-  endpoint_public_access = true
+  endpoint_public_access       = true
+  endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   enable_cluster_creator_admin_permissions = true
 
@@ -18,24 +19,29 @@ module "eks" {
 
   addons = {
     coredns = {
-      most_recent = true
+      most_recent    = true
+      before_compute = true
     }
 
     kube-proxy = {
-      most_recent = true
+      most_recent    = true
+      before_compute = true
     }
 
     vpc-cni = {
-      most_recent = true
+      most_recent    = true
+      before_compute = true
     }
 
     eks-pod-identity-agent = {
-      most_recent = true
+      most_recent    = true
+      before_compute = true
     }
   }
   eks_managed_node_groups = {
     default = {
-      name = "${var.cluster_name}-nodes"
+      name               = "${var.cluster_name}-nodes"
+      kubernetes_version = var.kubernetes_version
 
       instance_types = [var.node_instance_type]
 
@@ -45,7 +51,7 @@ module "eks" {
 
       subnet_ids = module.vpc.private_subnets
 
-      capacity_type = "ON_DEMAND"
+      capacity_type = var.node_capacity_type
 
       labels = {
         role = "general"
