@@ -260,32 +260,30 @@ jobs:
       - name: Refresh Argo CD application
         run: |
           kubectl get application/alffino-python-hello -n argocd -o wide
-          kubectl get application/alffino-python-hello -n argocd -o jsonpath='{.spec.source.repoURL}{"\n"}{.status.conditions[*].message}{"\n"}'
+          kubectl get application/alffino-python-hello -n argocd -o jsonpath='{.spec.source.repoURL}{"\n"}'
+          kubectl get application/alffino-python-hello -n argocd -o jsonpath='{range .status.conditions[*]}{.type}: {.message}{"\n"}{end}' || true
           kubectl annotate application/alffino-python-hello -n argocd argocd.argoproj.io/refresh=hard --overwrite
-
-      - name: Wait for Argo CD sync
-        run: |
-          deadline=$((SECONDS + 10 * 60))
-          while (( SECONDS < deadline )); do
-            sync_status=$(kubectl get application/alffino-python-hello -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || true)
-            health_status=$(kubectl get application/alffino-python-hello -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || true)
-            echo "Argo CD application: sync=${sync_status:-Unknown}, health=${health_status:-Unknown}"
-
-            if [[ "$sync_status" == "Synced" ]]; then
-              exit 0
-            fi
-            sleep 15
-          done
-
-          echo "Argo CD did not report Synced within 10 minutes. Application diagnostics:"
-          kubectl get application/alffino-python-hello -n argocd -o yaml
-          kubectl describe application/alffino-python-hello -n argocd
-          exit 1
 
       - name: Wait for application resources
         run: |
-          kubectl wait --for=create namespace/alffino --timeout=5m
-          kubectl wait --for=create deployment/alffino-python-hello -n alffino --timeout=5m
+          if ! kubectl wait --for=create namespace/alffino --timeout=10m; then
+            echo "Application resources were not created. Argo diagnostics:"
+            kubectl get application/alffino-python-hello -n argocd -o yaml
+            kubectl describe application/alffino-python-hello -n argocd
+            kubectl logs -n argocd -l app.kubernetes.io/name=argocd-application-controller --tail=100 || true
+            kubectl logs -n argocd -l app.kubernetes.io/name=argocd-repo-server --tail=100 || true
+            exit 1
+          fi
+
+          if ! kubectl wait --for=create deployment/alffino-python-hello -n alffino --timeout=5m; then
+            echo "Application deployment was not created. Argo diagnostics:"
+            kubectl get application/alffino-python-hello -n argocd -o yaml
+            kubectl describe application/alffino-python-hello -n argocd
+            kubectl get all -n alffino || true
+            kubectl logs -n argocd -l app.kubernetes.io/name=argocd-application-controller --tail=100 || true
+            kubectl logs -n argocd -l app.kubernetes.io/name=argocd-repo-server --tail=100 || true
+            exit 1
+          fi
 
       - name: Verify application rollout
         run: kubectl rollout status deployment/alffino-python-hello -n alffino --timeout=10m
