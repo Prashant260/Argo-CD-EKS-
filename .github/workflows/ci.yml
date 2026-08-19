@@ -110,13 +110,20 @@ jobs:
         env:
           GITOPS_REPO: ${{ secrets.GITOPS_REPO }}
         run: |
-          if [ -z "${GITOPS_REPO}" ]; then
+          if [[ -z "${GITOPS_REPO}" ]]; then
             echo "ERROR: Repository secret GITOPS_REPO is not set."
             echo "Set GITOPS_REPO to the git URL of your GitOps repo, e.g. https://github.com/yourorg/your-gitops-repo.git"
             exit 1
           fi
 
-          sed "s|REPLACE_WITH_GITOPS_REPO|${GITOPS_REPO}|" argocd/app.yaml > /tmp/argocd-app.yaml
+          argocd_repo="$GITOPS_REPO"
+          if [[ "$argocd_repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            argocd_repo="https://github.com/${argocd_repo}.git"
+          elif [[ "$argocd_repo" =~ ^https://github.com/[^/]+/[^/]+/?$ && "$argocd_repo" != *.git && "$argocd_repo" != *.git/ ]]; then
+            argocd_repo="${argocd_repo%/}.git"
+          fi
+
+          sed "s|REPLACE_WITH_GITOPS_REPO|${argocd_repo}|" argocd/app.yaml > /tmp/argocd-app.yaml
           echo "--- /tmp/argocd-app.yaml ---"
           sed -n '1,160p' /tmp/argocd-app.yaml
           kubectl apply -f /tmp/argocd-app.yaml
@@ -253,6 +260,7 @@ jobs:
       - name: Refresh Argo CD application
         run: |
           kubectl get application/alffino-python-hello -n argocd -o wide
+          kubectl get application/alffino-python-hello -n argocd -o jsonpath='{.spec.source.repoURL}{"\n"}{.status.conditions[*].message}{"\n"}'
           kubectl annotate application/alffino-python-hello -n argocd argocd.argoproj.io/refresh=hard --overwrite
 
       - name: Wait for Argo CD sync
