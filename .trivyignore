@@ -1,5 +1,6 @@
-# EKS API access remains public but is restricted to the operator's /32 CIDR.
-# GitHub-hosted Actions runners also require public API access for kubectl.
+# GitHub-hosted Actions runners use changing IPs, so the public EKS API endpoint
+# is currently open. Replace this with private endpoint access and a self-hosted
+# runner or VPN before treating this as production-ready.
 AWS-0040
 
 # EKS managed nodes require unrestricted outbound access for AWS APIs, ECR,
