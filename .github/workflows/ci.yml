@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: read
+  contents: write
   security-events: write
   actions: read
 
@@ -175,16 +175,29 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           GITOPS_REPO: ${{ secrets.GITOPS_REPO }}
           GITOPS_REPO_TOKEN: ${{ secrets.GITOPS_REPO_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           missing=()
-          for name in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY ECR_REPOSITORY GITOPS_REPO GITOPS_REPO_TOKEN; do
+          for name in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY ECR_REPOSITORY GITOPS_REPO; do
             if [[ -z "${!name}" ]]; then
               missing+=("$name")
             fi
           done
 
+          normalized_repo="${GITOPS_REPO%.git}"
+          if [[ "$normalized_repo" != https://github.com/* && "$normalized_repo" == */* ]]; then
+            normalized_repo="https://github.com/$normalized_repo"
+          fi
+          same_repo="https://github.com/${GITHUB_REPOSITORY}"
+          if [[ -z "$GITOPS_REPO_TOKEN" && "$normalized_repo" != "$same_repo" && "$GITOPS_REPO" != "$GITHUB_REPOSITORY" ]]; then
+            missing+=("GITOPS_REPO_TOKEN")
+          fi
+
           if (( ${#missing[@]} > 0 )); then
             printf 'ERROR: missing required GitHub secret(s): %s\n' "${missing[*]}"
+            if [[ " ${missing[*]} " == *" GITOPS_REPO_TOKEN "* ]]; then
+              echo "For this repository, either set GITOPS_REPO to $GITHUB_REPOSITORY to use GITHUB_TOKEN, or add GITOPS_REPO_TOKEN for an external GitOps repository."
+            fi
             exit 1
           fi
 
@@ -208,7 +221,14 @@ jobs:
         env:
           GITOPS_REPO: ${{ secrets.GITOPS_REPO }}
           GITOPS_REPO_TOKEN: ${{ secrets.GITOPS_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
+          normalized_repo="${GITOPS_REPO%.git}"
+          same_repo="https://github.com/${GITHUB_REPOSITORY}"
+          if [[ -z "$GITOPS_REPO_TOKEN" && ( "$normalized_repo" == "$same_repo" || "$GITOPS_REPO" == "$GITHUB_REPOSITORY" ) ]]; then
+            export GITOPS_REPO_TOKEN="$GITHUB_TOKEN"
+          fi
           bash scripts/update-gitops.sh "${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
 
       - name: Configure kubectl
