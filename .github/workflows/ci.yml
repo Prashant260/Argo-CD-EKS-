@@ -234,8 +234,16 @@ jobs:
         run: |
           normalized_repo="${GITOPS_REPO%.git}"
           same_repo="https://github.com/${GITHUB_REPOSITORY}"
-          if [[ -z "$GITOPS_REPO_TOKEN" && ( "$normalized_repo" == "$same_repo" || "$GITOPS_REPO" == "$GITHUB_REPOSITORY" ) ]]; then
+          is_same_repo=false
+          if [[ "$normalized_repo" == "$same_repo" || "$GITOPS_REPO" == "$GITHUB_REPOSITORY" ]]; then
+            is_same_repo=true
+          fi
+
+          if [[ "$is_same_repo" == true ]]; then
             export GITOPS_REPO="$GITHUB_WORKSPACE"
+            if [[ -n "$GITOPS_REPO_TOKEN" ]]; then
+              git remote set-url origin "https://x-access-token:${GITOPS_REPO_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            fi
           fi
           bash scripts/update-gitops.sh "${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
 

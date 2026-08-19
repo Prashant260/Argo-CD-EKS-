@@ -106,6 +106,11 @@ GITOPS_REPO_TOKEN
 
 Use `GITOPS_REPO` as either `OWNER/REPOSITORY` or `https://github.com/OWNER/REPOSITORY.git`. For this repository, set it to `Prashant260/Argo-CD-EKS-` and the workflow uses the built-in `GITHUB_TOKEN`, so `GITOPS_REPO_TOKEN` is not needed. External GitOps repositories require `GITOPS_REPO_TOKEN`. Do not include a token in the repository URL.
 
+If promotion fails with HTTP `403`, the token does not have push permission for
+the repository, or a branch protection rule blocks Actions pushes. Update the
+fine-grained token with **Contents: Read and write** access to this repository,
+or allow the workflow token to bypass the branch rule.
+
 - `REPLACE_WITH_ECR_REPOSITORY` in `gitops/kustomization.yaml`.
 - `REPLACE_WITH_APP_ACM_CERTIFICATE_ARN` in app ingress manifests.
 - `REPLACE_WITH_ARGOCD_ACM_CERTIFICATE_ARN` in `argocd/argocd-ingress.yaml`.
