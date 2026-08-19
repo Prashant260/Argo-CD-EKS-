@@ -21,7 +21,7 @@ spec:
       labels:
         app.kubernetes.io/name: alffino-python-hello
       annotations:
-        app.kubernetes.io/version: local
+        app.kubernetes.io/version: efe327819fee004c00c6d9bf0d51786516f04674
     spec:
       serviceAccountName: alffino-python-hello
       securityContext:
