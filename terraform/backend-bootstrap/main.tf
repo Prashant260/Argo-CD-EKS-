@@ -38,9 +38,27 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" 
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.terraform_state.arn
     }
   }
+}
+
+resource "aws_kms_key" "terraform_state" {
+  description             = "KMS key for Terraform state S3 bucket"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = {
+    Name        = "argocd-eks-terraform-state-kms"
+    Project     = "Argo-CD-EKS"
+    Environment = "dev"
+  }
+}
+
+resource "aws_kms_alias" "terraform_state" {
+  name          = "alias/argocd-eks-terraform-state"
+  target_key_id = aws_kms_key.terraform_state.key_id
 }
 
 resource "aws_s3_bucket_public_access_block" "terraform_state" {
