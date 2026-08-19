@@ -5,6 +5,12 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type DESTROY to permanently destroy the Terraform-managed infrastructure"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -238,3 +244,38 @@ jobs:
 
       - name: Verify application rollout
         run: kubectl rollout status deployment/alffino-python-hello -n alffino --timeout=10m
+
+  destroy-infrastructure:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require destroy confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [[ "$CONFIRM" != "DESTROY" ]]; then
+            echo "Refusing to destroy infrastructure. The confirmation must be exactly DESTROY."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-2
+
+      - name: Initialize Terraform
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Create destroy plan
+        run: terraform -chdir=terraform plan -destroy -input=false -out=destroy.tfplan
+
+      - name: Apply destroy plan
+        run: terraform -chdir=terraform apply -input=false -auto-approve destroy.tfplan
