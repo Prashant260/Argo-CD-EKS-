@@ -160,6 +160,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -227,7 +229,7 @@ jobs:
           normalized_repo="${GITOPS_REPO%.git}"
           same_repo="https://github.com/${GITHUB_REPOSITORY}"
           if [[ -z "$GITOPS_REPO_TOKEN" && ( "$normalized_repo" == "$same_repo" || "$GITOPS_REPO" == "$GITHUB_REPOSITORY" ) ]]; then
-            export GITOPS_REPO_TOKEN="$GITHUB_TOKEN"
+            export GITOPS_REPO="$GITHUB_WORKSPACE"
           fi
           bash scripts/update-gitops.sh "${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
 
