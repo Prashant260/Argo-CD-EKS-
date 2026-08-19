@@ -55,8 +55,8 @@ flowchart LR
 - `AWS_SECRET_ACCESS_KEY`: IAM secret key paired with `AWS_ACCESS_KEY_ID`.
 - `ECR_REPOSITORY`: ECR repository URL from Terraform output
   `ecr_repository_url`.
-- `GITOPS_REPO`: GitOps repository URL. This can be the same repo.
-- `GITOPS_REPO_TOKEN`: Fine-scoped token allowed to push GitOps image updates.
+- `GITOPS_REPO`: GitOps repository in `OWNER/REPOSITORY` form or as a full HTTPS URL. This can be the same repo.
+- `GITOPS_REPO_TOKEN`: Fine-scoped token allowed to push GitOps image updates. For a private repository, the token must have repository contents read/write permission.
 
 See [docs/github-actions-oidc.md](docs/github-actions-oidc.md) for the AWS
 credentials setup and the alternative OIDC trust policy.
@@ -93,6 +93,18 @@ kubectl apply -f argocd/argocd-ingress.yaml
 Replace these values before the first sync:
 
 - `REPLACE_WITH_GITOPS_REPO` in `argocd/app.yaml`.
+
+The `promote-and-verify` job validates these values before cloning. Configure the following repository secrets under GitHub **Settings > Secrets and variables > Actions**:
+
+```text
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+ECR_REPOSITORY
+GITOPS_REPO
+GITOPS_REPO_TOKEN
+```
+
+Use `GITOPS_REPO` as either `OWNER/REPOSITORY` or `https://github.com/OWNER/REPOSITORY.git`. Do not include a token in the repository URL.
 - `REPLACE_WITH_ECR_REPOSITORY` in `gitops/kustomization.yaml`.
 - `REPLACE_WITH_APP_ACM_CERTIFICATE_ARN` in app ingress manifests.
 - `REPLACE_WITH_ARGOCD_ACM_CERTIFICATE_ARN` in `argocd/argocd-ingress.yaml`.

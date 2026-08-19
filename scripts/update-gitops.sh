@@ -10,6 +10,19 @@ if [[ -z "$GITOPS_REPO" || -z "$IMAGE" ]]; then
   exit 1
 fi
 
+if [[ "$GITOPS_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+  GITOPS_REPO="https://github.com/${GITOPS_REPO}.git"
+fi
+
+if [[ "$GITOPS_REPO" =~ ^https://github.com/[^/]+/[^/]+/?$ && "$GITOPS_REPO" != *.git && "$GITOPS_REPO" != *.git/ ]]; then
+  GITOPS_REPO="${GITOPS_REPO%/}.git"
+fi
+
+if [[ "$GITOPS_REPO" == https://github.com/* && -z "$GITOPS_TOKEN" ]]; then
+  echo "ERROR: GITOPS_REPO_TOKEN is required for private GitHub repositories."
+  exit 1
+fi
+
 repo_without_tag="${IMAGE%:*}"
 tag="${IMAGE##*:}"
 
@@ -25,10 +38,10 @@ else
   tmpdir=$(mktemp -d)
   cleanup_tmp=true
   if [[ -n "$GITOPS_TOKEN" && "$GITOPS_REPO" == https://github.com/* ]]; then
-    clone_url="${GITOPS_REPO/https:\/\/github.com\//https:\/\/x-access-token:${GITOPS_TOKEN}@github.com\/}"
-    git clone "$clone_url" "$tmpdir"
+    clone_url="https://x-access-token:${GITOPS_TOKEN}@${GITOPS_REPO#https://}"
+    git clone --quiet "$clone_url" "$tmpdir"
   else
-    git clone "$GITOPS_REPO" "$tmpdir"
+    git clone --quiet "$GITOPS_REPO" "$tmpdir"
   fi
   workdir="$tmpdir"
 fi
