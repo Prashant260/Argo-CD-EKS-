@@ -1,18 +1,27 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: magnit-app
+  name: alffino-python-hello
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: REPLACE_WITH_GITOPS_REPO
-    targetRevision: HEAD
-    path: path/to/manifests
+    targetRevision: main
+    path: gitops
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: alffino
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

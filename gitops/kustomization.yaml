@@ -1,5 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
 resources:
+  - k8s/namespace.yaml
+  - k8s/serviceaccount.yaml
   - k8s/deployment.yaml
+  - k8s/service.yaml
+  - k8s/ingress.yaml
+  - k8s/hpa.yaml
+  - k8s/pdb.yaml
+  - k8s/networkpolicy.yaml
+
 images:
-  - name: my-ecr-repo/my-app:1.2.3
-    newName: my-ecr-repo/my-app:1.2.3
+  - name: alffino-python-hello
+    newName: REPLACE_WITH_ECR_REPOSITORY
+    newTag: local

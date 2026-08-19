@@ -1,4 +1,7 @@
 .terraform/
+.venv/
+__pycache__/
+.pytest_cache/
 .terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.*

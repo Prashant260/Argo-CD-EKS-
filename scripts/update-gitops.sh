@@ -6,23 +6,27 @@ GITOPS_TOKEN=${GITOPS_REPO_TOKEN:-}
 IMAGE=${1:-}
 
 if [[ -z "$GITOPS_REPO" || -z "$IMAGE" ]]; then
-  echo "Usage: GITOPS_REPO=<repo> [GITOPS_REPO_TOKEN=<token>] $0 <image:tag>"
+  echo "Usage: GITOPS_REPO=<repo-url-or-path> [GITOPS_REPO_TOKEN=<token>] $0 <ecr-image:tag>"
   exit 1
 fi
 
-workdir=""
-cleanup_tmp=false
+repo_without_tag="${IMAGE%:*}"
+tag="${IMAGE##*:}"
 
-# Determine how to obtain the repo: local path or remote URL
+if [[ "$repo_without_tag" == "$tag" ]]; then
+  echo "Image must include an explicit tag: $IMAGE"
+  exit 1
+fi
+
+cleanup_tmp=false
 if [[ -d "$GITOPS_REPO" ]]; then
-  # local directory — operate in-place
   workdir="$GITOPS_REPO"
 else
   tmpdir=$(mktemp -d)
   cleanup_tmp=true
-  # support HTTPS clone with token when provided
-  if [[ -n "$GITOPS_TOKEN" && ( "$GITOPS_REPO" == http* || "$GITOPS_REPO" == *github.com* ) ]]; then
-    git clone "https://x-access-token:${GITOPS_TOKEN}@${GITOPS_REPO}" "$tmpdir"
+  if [[ -n "$GITOPS_TOKEN" && "$GITOPS_REPO" == https://github.com/* ]]; then
+    clone_url="${GITOPS_REPO/https:\/\/github.com\//https:\/\/x-access-token:${GITOPS_TOKEN}@github.com\/}"
+    git clone "$clone_url" "$tmpdir"
   else
     git clone "$GITOPS_REPO" "$tmpdir"
   fi
@@ -31,51 +35,75 @@ fi
 
 pushd "$workdir" > /dev/null
 
-# ensure git user is set for CI clones
-git config user.email "ci@local" || true
-git config user.name "ci-bot" || true
+git config user.email "${GIT_AUTHOR_EMAIL:-ci@alffino.online}"
+git config user.name "${GIT_AUTHOR_NAME:-github-actions}"
 
-# If this is not a git repo (local skeleton), initialize one so commits work
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  git init
-  git add -A
-  git commit -m "chore: initial commit (gitops skeleton)" || true
+manifest_dir="${GITOPS_PATH:-gitops}"
+if [[ ! -f "$manifest_dir/kustomization.yaml" && -f "kustomization.yaml" ]]; then
+  manifest_dir="."
 fi
 
-# Replace common placeholders in YAML/kustomize files.
-# Handles occurrences like `image: REPLACE_WITH_IMAGE`, `REPLACE_WITH_IMAGE`,
-# and kustomize `images: - name: ... newName: ...` entries.
-shopt -s globstar || true
-changed=false
-for f in $(find . -type f \( -name "*.yaml" -o -name "*.yml" \) ); do
-  if grep -q -E "REPLACE_WITH_IMAGE|REPLACE_WITH_ECR_REPO" "$f"; then
-    sed -E -i \
-      -e "s|(image:\s*)REPLACE_WITH_IMAGE|\1${IMAGE}|g" \
-      -e "s|REPLACE_WITH_IMAGE|${IMAGE}|g" \
-      -e "s|REPLACE_WITH_ECR_REPO[:=]?\s*.*|${IMAGE}|g" \
-      -e "s|(newName:\s*)REPLACE_WITH_IMAGE|\1${IMAGE}|g" \
-      "$f"
-    changed=true
-  fi
-done
+if [[ ! -f "$manifest_dir/kustomization.yaml" ]]; then
+  echo "Cannot find kustomization.yaml in $manifest_dir"
+  exit 1
+fi
 
-if [[ "$changed" = true ]]; then
-  git add -A
-  if git diff --cached --quiet; then
-    echo "No changes to commit"
-  else
-    git commit -m "ci: update image to ${IMAGE}" || true
-    # Try to push, but do not fail the script if push is not possible
-    git push || true
-  fi
+python3 - "$manifest_dir/kustomization.yaml" "$repo_without_tag" "$tag" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+repo = sys.argv[2]
+tag = sys.argv[3]
+lines = path.read_text().splitlines()
+out = []
+
+for line in lines:
+    stripped = line.strip()
+    if stripped.startswith("newName:"):
+        indent = line[: len(line) - len(line.lstrip())]
+        out.append(f"{indent}newName: {repo}")
+    elif stripped.startswith("newTag:"):
+        indent = line[: len(line) - len(line.lstrip())]
+        out.append(f"{indent}newTag: {tag}")
+    else:
+        out.append(line)
+
+path.write_text("\n".join(out) + "\n")
+PY
+
+if [[ -f "$manifest_dir/k8s/deployment.yaml" ]]; then
+  python3 - "$manifest_dir/k8s/deployment.yaml" "$tag" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+tag = sys.argv[2]
+lines = path.read_text().splitlines()
+out = []
+for line in lines:
+    stripped = line.strip()
+    if stripped.startswith("app.kubernetes.io/version:"):
+        indent = line[: len(line) - len(line.lstrip())]
+        out.append(f"{indent}app.kubernetes.io/version: {tag}")
+    else:
+        out.append(line)
+path.write_text("\n".join(out) + "\n")
+PY
+fi
+
+git add "$manifest_dir"
+if git diff --cached --quiet; then
+  echo "No GitOps image changes to commit"
 else
-  echo "No placeholders found; nothing to update"
+  git commit -m "ci: deploy ${IMAGE}"
+  git push
 fi
 
 popd > /dev/null
 
-if $cleanup_tmp; then
+if [[ "$cleanup_tmp" == true ]]; then
   rm -rf "$tmpdir"
 fi
 
-echo "GitOps repo updated"
+echo "GitOps image set to $IMAGE"
