@@ -37,7 +37,12 @@ jobs:
       - name: Run unit tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: python -m pytest -q
+        run: |
+          echo "CWD: $(pwd)"
+          echo "Listing repository files:" && ls -la
+          python -V
+          python -c "import sys, json; print(json.dumps({'sys_path': sys.path}, indent=2))"
+          python -m pytest -q -vv
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
