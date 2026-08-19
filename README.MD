@@ -57,6 +57,9 @@ flowchart LR
 - `GITOPS_REPO`: GitOps repository URL. This can be the same repo.
 - `GITOPS_REPO_TOKEN`: Fine-scoped token allowed to push GitOps image updates.
 
+See [docs/github-actions-oidc.md](docs/github-actions-oidc.md) for the exact
+AWS OIDC trust policy and setup steps for this repository.
+
 ## First-Time Setup
 
 Create the Terraform state backend once before initializing the main stack:
