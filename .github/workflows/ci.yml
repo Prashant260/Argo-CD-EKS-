@@ -68,6 +68,7 @@ jobs:
           scan-type: fs
           scan-ref: .
           skip-dirs: .git,.venv,.pytest_cache,.cache,terraform/.terraform
+          trivyignores: .trivyignore
           scanners: vuln,secret,misconfig
           severity: CRITICAL,HIGH
           exit-code: '1'
