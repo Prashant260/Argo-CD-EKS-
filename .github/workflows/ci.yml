@@ -250,8 +250,29 @@ jobs:
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region ap-southeast-2 --name argocd-eks
 
+      - name: Refresh Argo CD application
+        run: |
+          kubectl get application/alffino-python-hello -n argocd -o wide
+          kubectl annotate application/alffino-python-hello -n argocd argocd.argoproj.io/refresh=hard --overwrite
+
       - name: Wait for Argo CD sync
-        run: kubectl wait --for=jsonpath='{.status.sync.status}'=Synced application/alffino-python-hello -n argocd --timeout=10m
+        run: |
+          deadline=$((SECONDS + 10 * 60))
+          while (( SECONDS < deadline )); do
+            sync_status=$(kubectl get application/alffino-python-hello -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || true)
+            health_status=$(kubectl get application/alffino-python-hello -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || true)
+            echo "Argo CD application: sync=${sync_status:-Unknown}, health=${health_status:-Unknown}"
+
+            if [[ "$sync_status" == "Synced" ]]; then
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo "Argo CD did not report Synced within 10 minutes. Application diagnostics:"
+          kubectl get application/alffino-python-hello -n argocd -o yaml
+          kubectl describe application/alffino-python-hello -n argocd
+          exit 1
 
       - name: Wait for application resources
         run: |
