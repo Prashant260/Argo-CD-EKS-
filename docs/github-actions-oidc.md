@@ -1,14 +1,36 @@
-# GitHub Actions AWS OIDC
+# GitHub Actions AWS Credentials
 
-This repository uses GitHub Actions OIDC instead of long-lived AWS access keys.
-The values below are tailored to this deployment:
+The current workflow uses GitHub repository secrets containing AWS access keys.
+OIDC remains documented below as the preferred future migration because it
+avoids storing long-lived credentials in GitHub.
 
 - AWS account: `755729228993`
 - AWS region: `ap-southeast-2`
 - GitHub repository: `Prashant260/Argo-CD-EKS-`
 - Deployment branch: `main`
-- IAM role name: `GitHubActionsEKSDeploy`
-- `AWS_ROLE_TO_ASSUME`: `arn:aws:iam::755729228993:role/GitHubActionsEKSDeploy`
+- GitHub secrets: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+
+## Current setup: access-key secrets
+
+In **GitHub -> Settings -> Secrets and variables -> Actions**, create these
+repository secrets:
+
+- `AWS_ACCESS_KEY_ID`: the IAM access key ID.
+- `AWS_SECRET_ACCESS_KEY`: the matching IAM secret access key.
+
+The IAM identity behind these keys needs only the permissions required by this
+workflow: Terraform infrastructure changes, ECR push and scan operations, EKS
+cluster access, and the required `iam:PassRole` permissions. Do not use the
+root account credentials or an unrestricted administrator key.
+
+The workflow uses `aws-actions/configure-aws-credentials@v4` with these secrets
+and `aws-region: ap-southeast-2`.
+
+## Preferred alternative: GitHub Actions OIDC
+
+The following setup is optional and is not required for the current workflow.
+It can replace access-key secrets later with the role
+`arn:aws:iam::755729228993:role/GitHubActionsEKSDeploy`.
 
 ## 1. Create the GitHub OIDC provider
 

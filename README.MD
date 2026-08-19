@@ -13,7 +13,7 @@ The public application domain is `app.alffino.online`. The Argo CD UI domain is
 flowchart LR
   dev[Developer] -->|git push| gh[GitHub Repository]
   gh -->|tests and scans| gha[GitHub Actions]
-  gha -->|OIDC assume role| aws[AWS IAM]
+  gha -->|AWS credentials| aws[AWS IAM]
   gha -->|build and scan image| ecr[Amazon ECR]
   gha -->|commit image tag| gitops[GitOps Path]
   gitops -->|poll or webhook| argocd[Argo CD]
@@ -42,8 +42,8 @@ flowchart LR
 2. GitHub Actions installs dependencies and runs unit tests.
 3. Security gates run secret scanning, dependency scanning, IaC scanning, and
    container image scanning with Trivy/Gitleaks.
-4. GitHub Actions assumes an AWS IAM role using OIDC and pushes the image to
-   Amazon ECR with the immutable Git SHA tag.
+4. GitHub Actions authenticates with the configured AWS access-key secrets and
+  pushes the image to Amazon ECR with the immutable Git SHA tag.
 5. The pipeline commits the image repository and tag into `gitops/kustomization.yaml`.
 6. Argo CD detects the GitOps change and syncs the workload to EKS.
 7. The AWS Load Balancer Controller reconciles the ALB ingress for
@@ -51,14 +51,15 @@ flowchart LR
 
 ## Required GitHub Secrets
 
-- `AWS_ROLE_TO_ASSUME`: IAM role ARN trusted by GitHub OIDC.
+- `AWS_ACCESS_KEY_ID`: IAM access key used by GitHub Actions.
+- `AWS_SECRET_ACCESS_KEY`: IAM secret key paired with `AWS_ACCESS_KEY_ID`.
 - `ECR_REPOSITORY`: ECR repository URL from Terraform output
   `ecr_repository_url`.
 - `GITOPS_REPO`: GitOps repository URL. This can be the same repo.
 - `GITOPS_REPO_TOKEN`: Fine-scoped token allowed to push GitOps image updates.
 
-See [docs/github-actions-oidc.md](docs/github-actions-oidc.md) for the exact
-AWS OIDC trust policy and setup steps for this repository.
+See [docs/github-actions-oidc.md](docs/github-actions-oidc.md) for the AWS
+credentials setup and the alternative OIDC trust policy.
 
 ## First-Time Setup
 
