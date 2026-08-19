@@ -250,6 +250,14 @@ jobs:
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region ap-southeast-2 --name argocd-eks
 
+      - name: Wait for Argo CD sync
+        run: kubectl wait --for=jsonpath='{.status.sync.status}'=Synced application/alffino-python-hello -n argocd --timeout=10m
+
+      - name: Wait for application resources
+        run: |
+          kubectl wait --for=create namespace/alffino --timeout=5m
+          kubectl wait --for=create deployment/alffino-python-hello -n alffino --timeout=5m
+
       - name: Verify application rollout
         run: kubectl rollout status deployment/alffino-python-hello -n alffino --timeout=10m
 
