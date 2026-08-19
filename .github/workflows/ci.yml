@@ -35,7 +35,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run unit tests
-        run: pytest -q
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: python -m pytest -q
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
