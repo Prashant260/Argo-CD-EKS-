@@ -289,7 +289,19 @@ jobs:
           fi
 
       - name: Verify application rollout
-        run: kubectl rollout status deployment/alffino-python-hello -n alffino --timeout=10m
+        run: |
+          if ! kubectl rollout status deployment/alffino-python-hello -n alffino --timeout=10m; then
+            echo "Deployment rollout did not complete. Kubernetes diagnostics:"
+            kubectl get deployment/alffino-python-hello -n alffino -o yaml || true
+            kubectl get pods -n alffino -o wide || true
+            kubectl describe deployment/alffino-python-hello -n alffino || true
+            kubectl describe pods -n alffino || true
+            kubectl get events -n alffino --sort-by='.lastTimestamp' || true
+            for pod in $(kubectl get pods -n alffino -l app.kubernetes.io/name=alffino-python-hello -o name); do
+              kubectl logs -n alffino "$pod" --all-containers --tail=100 || true
+            done
+            exit 1
+          fi
 
   destroy-infrastructure:
     if: github.event_name == 'workflow_dispatch'
