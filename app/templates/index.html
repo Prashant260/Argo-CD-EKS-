@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Alffino Control Center</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background:
+                radial-gradient(
+                    circle at 15% 10%,
+                    rgba(99, 102, 241, 0.18),
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 85% 20%,
+                    rgba(14, 165, 233, 0.15),
+                    transparent 30%
+                ),
+                #070b14;
+
+            color: #f8fafc;
+        }
+
+        .container {
+            width: min(1200px, 92%);
+            margin: auto;
+        }
+
+        header {
+            padding: 32px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+
+            display: grid;
+            place-items: center;
+
+            font-size: 22px;
+            font-weight: 800;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #6366f1,
+                    #06b6d4
+                );
+
+            box-shadow:
+                0 0 30px rgba(99, 102, 241, 0.35);
+        }
+
+        .brand h1 {
+            font-size: 21px;
+        }
+
+        .brand p {
+            margin-top: 3px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 9px 15px;
+
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            border-radius: 999px;
+
+            background: rgba(34, 197, 94, 0.08);
+
+            color: #86efac;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+
+            box-shadow:
+                0 0 12px rgba(34, 197, 94, 0.9);
+        }
+
+        .hero {
+            margin-top: 20px;
+            margin-bottom: 28px;
+        }
+
+        .hero h2 {
+            font-size: clamp(32px, 5vw, 56px);
+            line-height: 1.05;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #ffffff,
+                    #a5b4fc,
+                    #67e8f9
+                );
+
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            margin-top: 14px;
+            max-width: 650px;
+
+            color: #94a3b8;
+            line-height: 1.7;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 18px;
+        }
+
+        .card {
+            padding: 24px;
+
+            border: 1px solid
+                rgba(148, 163, 184, 0.12);
+
+            border-radius: 20px;
+
+            background:
+                rgba(15, 23, 42, 0.72);
+
+            backdrop-filter: blur(16px);
+
+            box-shadow:
+                0 20px 60px
+                rgba(0, 0, 0, 0.22);
+
+            transition:
+                transform 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+
+            border-color:
+                rgba(129, 140, 248, 0.35);
+        }
+
+        .card-label {
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .card-value {
+            margin-top: 12px;
+            font-size: 25px;
+            font-weight: 700;
+        }
+
+        .healthy {
+            color: #4ade80;
+        }
+
+        .info {
+            color: #67e8f9;
+        }
+
+        .section {
+            margin-top: 22px;
+        }
+
+        .section-title {
+            margin-bottom: 14px;
+            color: #cbd5e1;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .deployment {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 1px;
+
+            overflow: hidden;
+
+            border:
+                1px solid
+                rgba(148, 163, 184, 0.12);
+
+            border-radius: 20px;
+
+            background:
+                rgba(148, 163, 184, 0.08);
+        }
+
+        .deployment-item {
+            padding: 22px;
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .deployment-item span {
+            display: block;
+
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        .deployment-item strong {
+            display: block;
+
+            margin-top: 8px;
+
+            font-size: 15px;
+            color: #e2e8f0;
+        }
+
+        .systems {
+            display: grid;
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 14px;
+        }
+
+        .system {
+            padding: 18px;
+
+            border-radius: 16px;
+
+            background:
+                rgba(15, 23, 42, 0.65);
+
+            border:
+                1px solid
+                rgba(148, 163, 184, 0.1);
+        }
+
+        .system-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .system-name {
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .system-status {
+            color: #4ade80;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        footer {
+            padding: 35px 0;
+
+            display: flex;
+            justify-content: space-between;
+
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .refresh {
+            color: #67e8f9;
+        }
+
+        @media (max-width: 800px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            .deployment {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            .systems {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            header {
+                align-items: flex-start;
+                gap: 20px;
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .deployment,
+            .systems {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+
+        <div class="brand">
+
+            <div class="logo">
+                ◈
+            </div>
+
+            <div>
+                <h1>Alffino Control Center</h1>
+
+                <p>
+                    EKS · GitOps · Kubernetes Platform
+                </p>
+            </div>
+
+        </div>
+
+        <div class="status-pill">
+            <span class="dot"></span>
+            OPERATIONAL
+        </div>
+
+    </header>
+
+
+    <section class="hero">
+
+        <h2>
+            Your infrastructure.<br>
+            Delivered through GitOps.
+        </h2>
+
+        <p>
+            Production application running on Amazon EKS,
+            managed through Terraform and continuously
+            deployed with Argo CD.
+        </p>
+
+    </section>
+
+
+    <section class="cards">
+
+        <div class="card">
+
+            <div class="card-label">
+                EKS Cluster
+            </div>
+
+            <div class="card-value healthy">
+                ● ONLINE
+            </div>
+
+            <div
+                style="
+                    margin-top: 8px;
+                    color: #64748b;
+                    font-size: 12px;
+                "
+            >
+                {{ info.cluster }}
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-label">
+                Argo CD
+            </div>
+
+            <div class="card-value healthy">
+                ● SYNCED
+            </div>
+
+            <div
+                style="
+                    margin-top: 8px;
+                    color: #64748b;
+                    font-size: 12px;
+                "
+            >
+                GitOps deployment
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-label">
+                Application
+            </div>
+
+            <div class="card-value info">
+                {{ info.version }}
+            </div>
+
+            <div
+                style="
+                    margin-top: 8px;
+                    color: #64748b;
+                    font-size: 12px;
+                "
+            >
+                {{ info.environment }}
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="section">
+
+        <div class="section-title">
+            DEPLOYMENT OVERVIEW
+        </div>
+
+        <div class="deployment">
+
+            <div class="deployment-item">
+
+                <span>Service</span>
+
+                <strong>
+                    {{ info.service }}
+                </strong>
+
+            </div>
+
+
+            <div class="deployment-item">
+
+                <span>Version</span>
+
+                <strong>
+                    {{ info.version }}
+                </strong>
+
+            </div>
+
+
+            <div class="deployment-item">
+
+                <span>Cluster</span>
+
+                <strong>
+                    {{ info.cluster }}
+                </strong>
+
+            </div>
+
+
+            <div class="deployment-item">
+
+                <span>Region</span>
+
+                <strong>
+                    {{ info.region }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="section">
+
+        <div class="section-title">
+            SYSTEM STATUS
+        </div>
+
+        <div class="systems">
+
+            <div class="system">
+
+                <div class="system-top">
+
+                    <span class="system-name">
+                        Application
+                    </span>
+
+                    <span class="system-status">
+                        HEALTHY
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="system">
+
+                <div class="system-top">
+
+                    <span class="system-name">
+                        API
+                    </span>
+
+                    <span class="system-status">
+                        HEALTHY
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="system">
+
+                <div class="system-top">
+
+                    <span class="system-name">
+                        Readiness
+                    </span>
+
+                    <span class="system-status">
+                        READY
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="system">
+
+                <div class="system-top">
+
+                    <span class="system-name">
+                        GitOps
+                    </span>
+
+                    <span class="system-status">
+                        SYNCED
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <footer>
+
+        <div>
+            Pod: {{ info.pod }}
+        </div>
+
+        <div class="refresh">
+            ● Live application
+        </div>
+
+    </footer>
+
+</div>
+
+</body>
+</html>
