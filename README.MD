@@ -4,7 +4,7 @@ This repository contains a production-ready sample deployment for a Python
 Hello World service on Amazon EKS using GitHub Actions, Amazon ECR, Argo CD,
 Kustomize, and the AWS Load Balancer Controller.
 
-The public application domain is `app.alffino.online`. The Argo CD UI domain is
+The public application domain is `alffino.online`. The Argo CD UI domain is
 `argocd.alffino.online`.
 
 ## Architecture
