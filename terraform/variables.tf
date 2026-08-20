@@ -61,3 +61,26 @@ variable "ecr_repository_name" {
   type        = string
   default     = "alffino-python-hello"
 }
+
+variable "application_domain" {
+  description = "Public DNS name for the application ALB and ACM certificate."
+  type        = string
+  default     = "alffino.online"
+}
+
+variable "create_route53_zone" {
+  description = "Create the Route 53 hosted zone. Set false when DNS is managed elsewhere and provide route53_zone_id."
+  type        = bool
+  default     = true
+}
+
+variable "route53_zone_id" {
+  description = "Existing Route 53 hosted zone ID when create_route53_zone is false."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.create_route53_zone || var.route53_zone_id != null
+    error_message = "route53_zone_id is required when create_route53_zone is false."
+  }
+}

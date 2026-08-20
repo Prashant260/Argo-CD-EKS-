@@ -63,6 +63,14 @@ credentials setup and the alternative OIDC trust policy.
 
 ## First-Time Setup
 
+Terraform can create the ACM certificate, DNS validation record, and Route 53
+hosted zone for `alffino.online`. When `create_route53_zone = true`, delegate
+the nameservers shown by `terraform output route53_name_servers` at your domain
+registrar. ACM validation and the ALB HTTPS listener cannot complete until that
+delegation is active. The AWS Load Balancer Controller creates the ALB
+automatically from the Kubernetes Ingress after the cluster and certificate
+are ready.
+
 Create the Terraform state backend once before initializing the main stack:
 
 ```bash

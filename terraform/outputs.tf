@@ -42,3 +42,18 @@ output "ecr_repository_url" {
   description = "ECR repository URL for GitHub Actions ECR_REPOSITORY"
   value       = aws_ecr_repository.app.repository_url
 }
+
+output "application_domain" {
+  description = "Public application hostname."
+  value       = var.application_domain
+}
+
+output "application_certificate_arn" {
+  description = "Validated ACM certificate ARN for the application ALB."
+  value       = aws_acm_certificate_validation.application.certificate_arn
+}
+
+output "route53_name_servers" {
+  description = "Name servers to delegate when Terraform creates the hosted zone."
+  value       = var.create_route53_zone ? aws_route53_zone.application[0].name_servers : []
+}
