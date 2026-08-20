@@ -159,6 +159,13 @@ jobs:
           FULL_IMAGE="$ECR_REPOSITORY:$IMAGE_TAG"
           docker build -t "$FULL_IMAGE" .
           docker push "$FULL_IMAGE"
+          image_repo="${ECR_REPOSITORY##*/}"
+          image_digest=$(aws ecr describe-images --repository-name "$image_repo" --image-ids imageTag="$IMAGE_TAG" --query 'imageDetails[0].imageDigest' --output text)
+          if [[ -z "$image_digest" || "$image_digest" == "None" ]]; then
+            echo "ERROR: pushed image was not found in ECR: $FULL_IMAGE"
+            exit 1
+          fi
+          echo "Verified ECR image $FULL_IMAGE ($image_digest)"
           echo "image=$FULL_IMAGE" >> $GITHUB_OUTPUT
 
       - name: Scan container image
@@ -299,6 +306,7 @@ jobs:
             kubectl get events -n alffino --sort-by='.lastTimestamp' || true
             for pod in $(kubectl get pods -n alffino -l app.kubernetes.io/name=alffino-python-hello -o name); do
               kubectl logs -n alffino "$pod" --all-containers --tail=100 || true
+              kubectl logs -n alffino "$pod" --all-containers --previous --tail=100 || true
             done
             exit 1
           fi
