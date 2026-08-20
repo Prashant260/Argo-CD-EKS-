@@ -310,6 +310,43 @@ jobs:
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region ap-southeast-2 --name argocd-eks
 
+      - name: Point Route 53 at application ALB
+        run: |
+          for attempt in {1..40}; do
+            alb_dns=$(kubectl get ingress alffino-python-hello -n alffino -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+            if [[ -n "$alb_dns" ]]; then
+              break
+            fi
+            echo "Waiting for the AWS Load Balancer Controller to publish an ALB hostname..."
+            sleep 15
+          done
+
+          if [[ -z "${alb_dns:-}" ]]; then
+            echo "ERROR: Ingress did not receive an ALB hostname."
+            kubectl describe ingress alffino-python-hello -n alffino || true
+            exit 1
+          fi
+
+          alb_zone_id=$(aws elbv2 describe-load-balancers --region ap-southeast-2 --query "LoadBalancers[?DNSName=='${alb_dns}'].CanonicalHostedZoneId" --output text)
+          if [[ -z "$alb_zone_id" || "$alb_zone_id" == "None" ]]; then
+            echo "ERROR: Could not determine the ALB canonical hosted-zone ID."
+            exit 1
+          fi
+
+          zone_id=$(aws route53 list-hosted-zones-by-name --dns-name alffino.online --query 'HostedZones[0].Id' --output text | sed 's|/hostedzone/||')
+          if [[ -z "$zone_id" || "$zone_id" == "None" ]]; then
+            echo "ERROR: Route 53 hosted zone for alffino.online was not found."
+            exit 1
+          fi
+
+          aws route53 change-resource-record-sets \
+            --hosted-zone-id "$zone_id" \
+            --change-batch "$(cat <<JSON
+          {"Changes":[{"Action":"UPSERT","ResourceRecordSet":{"Name":"alffino.online","Type":"A","AliasTarget":{"HostedZoneId":"$alb_zone_id","DNSName":"$alb_dns","EvaluateTargetHealth":false}}}]}
+          JSON
+          )"
+          echo "alffino.online now aliases to $alb_dns"
+
       - name: Refresh Argo CD application
         run: |
           kubectl get application/alffino-python-hello -n argocd -o wide
