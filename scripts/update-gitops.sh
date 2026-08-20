@@ -110,6 +110,8 @@ if git diff --cached --quiet; then
   echo "No GitOps image changes to commit"
 else
   git commit -m "ci: deploy ${IMAGE}"
+  git fetch origin main
+  git rebase origin/main
   git push
 fi
 
