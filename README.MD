@@ -53,8 +53,8 @@ flowchart LR
 
 - `AWS_ACCESS_KEY_ID`: IAM access key used by GitHub Actions.
 - `AWS_SECRET_ACCESS_KEY`: IAM secret key paired with `AWS_ACCESS_KEY_ID`.
-- `ECR_REPOSITORY`: ECR repository URL from Terraform output
-  `ecr_repository_url`.
+- The workflow reads the ECR repository URL directly from Terraform output
+  `ecr_repository_url`; no `ECR_REPOSITORY` secret is required.
 - `GITOPS_REPO`: GitOps repository in `OWNER/REPOSITORY` form or as a full HTTPS URL. This can be the same repo.
 - `GITOPS_REPO_TOKEN`: Fine-scoped token allowed to push GitOps image updates. For a private repository, the token must have repository contents read/write permission.
 
@@ -99,7 +99,6 @@ The `promote-and-verify` job validates these values before cloning. Configure th
 ```text
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
-ECR_REPOSITORY
 GITOPS_REPO
 GITOPS_REPO_TOKEN
 ```

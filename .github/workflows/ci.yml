@@ -135,9 +135,14 @@ jobs:
     needs: apply-infrastructure
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.build-image.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -150,10 +155,22 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Read ECR repository from Terraform state
+        id: ecr-repository
+        run: |
+          terraform -chdir=terraform init -input=false
+          repository_url=$(terraform -chdir=terraform output -raw ecr_repository_url)
+          if [[ -z "$repository_url" ]]; then
+            echo "ERROR: Terraform output ecr_repository_url is empty."
+            exit 1
+          fi
+          echo "repository_url=$repository_url" >> "$GITHUB_OUTPUT"
+          echo "Using Terraform-managed ECR repository: $repository_url"
+
       - name: Build and push image
         id: build-image
         env:
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          ECR_REPOSITORY: ${{ steps.ecr-repository.outputs.repository_url }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           FULL_IMAGE="$ECR_REPOSITORY:$IMAGE_TAG"
@@ -197,13 +214,12 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           GITOPS_REPO: ${{ secrets.GITOPS_REPO }}
           GITOPS_REPO_TOKEN: ${{ secrets.GITOPS_REPO_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           missing=()
-          for name in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY ECR_REPOSITORY GITOPS_REPO; do
+          for name in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY GITOPS_REPO; do
             if [[ -z "${!name}" ]]; then
               missing+=("$name")
             fi
@@ -262,7 +278,7 @@ jobs:
               git remote set-url origin "https://x-access-token:${GITOPS_REPO_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
             fi
           fi
-          bash scripts/update-gitops.sh "${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
+          bash scripts/update-gitops.sh "${{ needs.build-and-scan-image.outputs.image }}"
 
       - name: Configure kubectl
         run: aws eks update-kubeconfig --region ap-southeast-2 --name argocd-eks
