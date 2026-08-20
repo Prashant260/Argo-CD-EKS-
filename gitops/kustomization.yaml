@@ -13,5 +13,5 @@ resources:
 
 images:
   - name: alffino-python-hello
-    newName: 755729228993.dkr.ecr.ap-southeast-2.amazonaws.com/argocd-eks
-    newTag: 4ed513df3c5097c06b5c0b3f81de79dde1d13443
+    newName: 755729228993.dkr.ecr.ap-southeast-2.amazonaws.com/alffino-python-hello
+    newTag: f051b539c5d4ee43fafdb98777f84cf25caa5f0c
