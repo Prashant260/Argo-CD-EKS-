@@ -9,4 +9,4 @@ desired_capacity = 2
 min_capacity     = 1
 max_capacity     = 3
 
-cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
+cluster_endpoint_public_access_cidrs = ["122.181.103.183/32"]
