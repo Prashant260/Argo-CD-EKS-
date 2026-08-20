@@ -5,7 +5,7 @@ metadata:
   namespace: alffino
   annotations:
     alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type":"redirect","RedirectConfig":{"Protocol":"HTTPS","Port":"443","StatusCode":"HTTP_301"}}'
-    alb.ingress.kubernetes.io/certificate-arn: REPLACE_WITH_APP_ACM_CERTIFICATE_ARN
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:755729228993:certificate/eec56b23-82d4-45fd-9cf2-1debd3b71c0b
     alb.ingress.kubernetes.io/group.name: alffino-public
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
